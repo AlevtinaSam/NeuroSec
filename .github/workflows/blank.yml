@@ -1,23 +1,53 @@
+# зайти на сервер 
+username@LAPTOP-J5SF12NT: ssh username@172.22.0.1
 # Как установить анаконду и конду https://help.reg.ru/support/servery-vps/oblachnyye-servery/ustanovka-programmnogo-obespecheniya/komandnaya-troka-ubuntu-komandy-bash?utm_source=google.com&utm_medium=organic&utm_campaign=google.com&utm_referrer=google.com
 # активировать конду окружение [conda1]
 [home]: conda activate conda1 
+# как потом выглядит активированное окружение
 [conda1]:
-# расположение файлов в папке на сервере, посмотреть где находишься, показать все файлы в директории
+# расположение файлов в папке на сервере; посмотреть где находишься; показать все файлы в директории
 [username@sms home]: $ cd //home/data/results/Genetics/; pwd ; ls
-  # копирование файлов из одной папки на сервере в другую
-  [username@sms home]: cp /home/data/results/Genetics/manakhov/RawData/231227_A01416_0046_BHKNWLDSX3_fastq/Genome/NP022308/NP022308_L00* /home/samorodova/neuro
+    # копирование файлов из одной папки на сервере в другую
+    [username@sms home]: cp /home/data/results/Genetics/manakhov/RawData/231227_A01416_0046_BHKNWLDSX3_fastq/Genome/NP022308/NP022308_L00* /home/samorodova/neuro
 
-# Совмещение файлов fastq.gz одного образца
-[username@sms dir]: srun -n1 cat NP022308_L00*_R2_*.fastq.gz > NP02230_R2.fastq.gz
-  # чтобы увеличить скорость операции работа на узле до 36 потоков
-  [username@sms dir]: srun -n1 
-    # The type of runner that the job will run on
-     [username@sms dir]: srun -p epic -w cn-044 --pty /bin/bash -i 
+# Совмещение файлов fastq.gz одного образца прямое прочтение
+[username@sms dir]: srun -n1 cat NP022308_L00*_R1_*.fastq.gz > NP02230_R1.fastq.gz 
+  # Совмещение файлов fastq.gz одного образца ОБРАТНОЕ прочтение
+  [username@sms dir]: srun -n1 cat NP022308_L00*_R2_*.fastq.gz > NP02230_R2.fastq.gz
+    # чтобы увеличить скорость операции работа на узле до 36 потоков
+    [username@sms dir]: srun -n1 
+   # увеличение скорости до 256 потоков на узле
+    [username@sms dir]: srun -p epic -w cn-044 --pty /bin/bash -i 
+   # посмотреть размер файлов в папке (при совмещение размер увеличивается)
+    [username@sms dir]: ls -lht
+   # переименовать совмещенный файл
+    [username@sms dir]: mv merged_R1.fastq.gz NP022308_R1.fastq.gz
+    
+   # Создать файл тхт, в новое окно вставить названия файлов, которые надо обработать/переместить
+    [username@sms dir]: nano samples.txt
+      # Создать скрипт для запуска
+       [username@sms dir]: nano name.sh
+       # запуск  
+       [username@sms dir]: srun -n1 ./name.sh
+       # Какой скрипт был использован
+                   #!/bin/bash
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v3
+             while IFS= read -r file; do
+
+                  # Копируем файлы
+             cp /home/data/results/Genetics/manakhov/RawData/231227_A01416_0046_BHKNWLDSX3_fastq/Genome/"$file"/*.fastq.gz /home/samorodova/neuro/
+
+                  # Проверяем успешность операции копирования
+             if [ $? -eq 0 ]; then
+                   echo "Успешно обработан $file"
+                       else
+                   echo "Возникли проблемы с копированием $file"
+                           fi
+
+                          done < samples.txt
+
+                  echo "Обработка файлов завершена."
+                   (base) [samorodova@sms neuro]$
 
       # Runs a single command using the runners shell
       - name: Run a one-line script
