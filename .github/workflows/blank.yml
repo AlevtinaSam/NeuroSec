@@ -1,0 +1,30 @@
+# Как установить анаконду и конду https://help.reg.ru/support/servery-vps/oblachnyye-servery/ustanovka-programmnogo-obespecheniya/komandnaya-troka-ubuntu-komandy-bash?utm_source=google.com&utm_medium=organic&utm_campaign=google.com&utm_referrer=google.com
+# активировать конду окружение [conda1]
+[home]: conda activate conda1 
+[conda1]:
+# расположение файлов в папке на сервере, посмотреть где находишься, показать все файлы в директории
+[username@sms home]: $ cd //home/data/results/Genetics/; pwd ; ls
+  # копирование файлов из одной папки на сервере в другую
+  [username@sms home]: cp /home/data/results/Genetics/manakhov/RawData/231227_A01416_0046_BHKNWLDSX3_fastq/Genome/NP022308/NP022308_L00* /home/samorodova/neuro
+
+# Совмещение файлов fastq.gz одного образца
+[username@sms dir]: srun -n1 cat NP022308_L00*_R2_*.fastq.gz > NP02230_R2.fastq.gz
+  # чтобы увеличить скорость операции работа на узле до 36 потоков
+  [username@sms dir]: srun -n1 
+    # The type of runner that the job will run on
+     [username@sms dir]: srun -p epic -w cn-044 --pty /bin/bash -i 
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+
+      # Runs a single command using the runners shell
+      - name: Run a one-line script
+        run: echo Hello, world!
+
+      # Runs a set of commands using the runners shell
+      - name: Run a multi-line script
+        run: |
+          echo Add other actions to build,
+          echo test, and deploy your project.
