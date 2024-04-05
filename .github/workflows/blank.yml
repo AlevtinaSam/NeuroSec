@@ -1,12 +1,11 @@
 # зайти на сервер 
 username@LAPTOP-J5SF12NT: ssh username@172.22.0.1
-# Как установить анаконду и конду https://help.reg.ru/support/servery-vps/oblachnyye-servery/ustanovka-programmnogo-obespecheniya/komandnaya-troka-ubuntu-komandy-bash?utm_source=google.com&utm_medium=organic&utm_campaign=google.com&utm_referrer=google.com
-# активировать конду окружение [conda1]
-[home]: conda activate conda1 
-# как потом выглядит активированное окружение
-[conda1]:
 # расположение файлов в папке на сервере; посмотреть где находишься; показать все файлы в директории
 [username@sms home]: $ cd //home/data/results/Genetics/; pwd ; ls
+    # создать новую папку/директорию внутри папки
+    [username@sms home]: mkdir neuro
+    # выйти из папки
+    [username@sms home]: exit
     # копирование файлов из одной папки на сервере в другую
     [username@sms home]: cp /home/data/results/Genetics/manakhov/RawData/231227_A01416_0046_BHKNWLDSX3_fastq/Genome/NP022308/NP022308_L00* /home/samorodova/neuro
 
@@ -15,46 +14,104 @@ username@LAPTOP-J5SF12NT: ssh username@172.22.0.1
   # Совмещение файлов fastq.gz одного образца ОБРАТНОЕ прочтение
   [username@sms dir]: srun -n1 cat NP022308_L00*_R2_*.fastq.gz > NP02230_R2.fastq.gz
     # чтобы увеличить скорость операции работа на узле до 36 потоков
-    [username@sms dir]: srun -n1 
+    [username@sms dir]: srun -n1; srun -n1 -t 36
    # увеличение скорости до 256 потоков на узле
     [username@sms dir]: srun -p epic -w cn-044 --pty /bin/bash -i 
    # посмотреть размер файлов в папке (при совмещение размер увеличивается)
     [username@sms dir]: ls -lht
    # переименовать совмещенный файл
     [username@sms dir]: mv merged_R1.fastq.gz NP022308_R1.fastq.gz
+
+   # копировать все файлы NP из одной директории в другую на сервере
+    [username@sms dir]: srun -n1 cp /home/data/results/Genetics/manakhov/RawData/231227_A01416_0046_BHKNWLDSX3_fastq/Genome/NP* /home/samorodova/neuro/
     
-   # Создать файл тхт, в новое окно вставить названия файлов, которые надо обработать/переместить
+   # Создать файл тхт, в новое окно вставить названия файлов, которые надо обработать
     [username@sms dir]: nano samples.txt
-      # Создать скрипт для запуска
+      # Создать скрипт для запуска обработки файлов 
        [username@sms dir]: nano name.sh
        # запуск  
        [username@sms dir]: srun -n1 ./name.sh
-       # Какой скрипт был использован
-                   #!/bin/bash
+       # посмотреть содержимое файла со скриптом
+      [username@sms dir]: cat name.sh
+      
+       # Какой скрипт был использован (приведен ниже)
 
-             while IFS= read -r file; do
+       
+                  #!/bin/bash
 
-                  # Копируем файлы
-             cp /home/data/results/Genetics/manakhov/RawData/231227_A01416_0046_BHKNWLDSX3_fastq/Genome/"$file"/*.fastq.gz /home/samorodova/neuro/
+while IFS= read -r file; do
 
-                  # Проверяем успешность операции копирования
-             if [ $? -eq 0 ]; then
-                   echo "Успешно обработан $file"
-                       else
-                   echo "Возникли проблемы с копированием $file"
-                           fi
+    # Копируем файлы
+    cp /home/data/results/Genetics/manakhov/RawData/231227_A01416_0046_BHKNWLDSX3_fastq/Genome/"$file"/*.fastq.gz /home/samorodova/neuro/
 
-                          done < samples.txt
+    # Проверяем успешность операции копирования
+    if [ $? -eq 0 ]; then
+        echo "Успешно обработан $file"
+    else
+        echo "Возникли проблемы с копированием $file"
+    fi
 
-                  echo "Обработка файлов завершена."
-                   (base) [samorodova@sms neuro]$
+done < samples.txt
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo Hello, world!
+echo "Обработка файлов завершена."
+(base) [samorodova@sms neuro]$ cat cat.sh
+#!/bin/bash
 
-      # Runs a set of commands using the runners shell
-      - name: Run a multi-line script
-        run: |
-          echo Add other actions to build,
-          echo test, and deploy your project.
+while IFS= read -r file; do
+
+  file_fastq_r1="${file}_R1.fastq.gz"
+  file_fastq_r2="${file}_R2.fastq.gz"
+
+  find . -name "${file}_L*_R1*.fastq.gz" -exec cat {} + > "$file_fastq_r1"
+  find . -name "${file}_L*_R2*.fastq.gz" -exec cat {} + > "$file_fastq_r2"
+
+  if [ $? -eq 0 ]; then
+    echo "Успешно обработан $file"
+  else
+    echo "Возникли проблемы с $file"
+  fi
+
+done < samples.txt
+
+echo "Обработка файлов завершена."
+
+(base) [samorodova@sms neuro]$
+
+
+      # посмотреть размер обработанных файлов
+      [username@sms dir]: ls -lht NP*.fastq.gz
+      # посмотреть размер только файлов с прямым прочтением; обратным прочтением
+      [username@sms dir]: ls -lht NP*R1.fastq.gz ; ls -lht NP*R2.fastq.gz
+      # переместить лишние необработанные файлы в отдельную папку
+      [username@sms dir]: mv /home/samorodova/neuro/NP*L* /home/samorodova/neuro/all/
+      
+# Как установить анаконду и конду https://help.reg.ru/support/servery-vps/oblachnyye-servery/ustanovka-programmnogo-obespecheniya/komandnaya-troka-ubuntu-komandy-bash?utm_source=google.com&utm_medium=organic&utm_campaign=google.com&utm_referrer=google.com
+# активировать конду окружение [conda1]
+[home]: conda activate conda1 
+# как потом выглядит активированное окружение
+[conda1]:
+
+# загрузить пакет fastqc
+[conda1]: conda install bioconda::fastqc
+# запуск анализа полученных объединенных файлов 
+# по 36 потокам 
+(conda1): srun -n1 -t 36 fastqc *gz
+# по 256 потокам (не забыть после запуска на узле активировать снова конду)
+(conda1): srun -p epic -w cn-045 --pty /bin/bash -i
+(conda1) [I have no name!@cn-045 neuro]: fastqc -t 256 *gz
+
+# загрузить пакет multiqc
+(conda1): conda install bioconda::multiqc
+# запуск анализа multiqc файлов
+(conda1): srun -n1 multiqc
+# посмотреть полученные файлы в папке
+(conda1): ls *html
+# скачать файл multiqc_report в папку на компьютере
+[dir]: scp USER@172.22.0.1:/home/USER/путь к файлу/имя файла /путь до дирректории куда хочешь сохранить файл/
+
+# пакеты, которые также надо скачать
+[home]: conda install picard
+[home]: conda install "samtools>=1.10"
+[home]: conda install -c bioconda bwa
+(conda1): bwa
+        
