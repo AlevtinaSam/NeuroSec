@@ -110,6 +110,8 @@ echo "Обработка файлов завершена."
 (conda1): ls *html
 # скачать файл multiqc_report в папку на компьютере
 [dir]: scp USER@172.22.0.1:/home/USER/путь к файлу/имя файла /путь до дирректории куда хочешь сохранить файл/
+# открыть заново ubunta на своем компьютере, набрать команду, зайти на сервер
+[user@LAPTOP-J5SF12NT]: scp samorodova@172.22.0.1:/home/samorodova/neuro/trimm_analis/ multiqc_report.html  /home/alevtina/
 
 # пакеты, которые также надо скачать
 [home]: conda install picard
