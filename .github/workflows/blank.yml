@@ -8,6 +8,8 @@ username@LAPTOP-J5SF12NT: ssh username@172.22.0.1
     [username@sms home]: exit
     # копирование файлов из одной папки на сервере в другую
     [username@sms home]: cp /home/data/results/Genetics/manakhov/RawData/231227_A01416_0046_BHKNWLDSX3_fastq/Genome/NP022308/NP022308_L00* /home/samorodova/neuro
+    # завершить любой процесс
+    Ctrl+\
 
 # Совмещение файлов fastq.gz одного образца прямое прочтение
 [username@sms dir]: srun -n1 cat NP022308_L00*_R1_*.fastq.gz > NP02230_R1.fastq.gz 
@@ -114,4 +116,37 @@ echo "Обработка файлов завершена."
 [home]: conda install "samtools>=1.10"
 [home]: conda install -c bioconda bwa
 (conda1): bwa
-        
+conda install bioconda::trimmomatic
+
+# скачать стандартный геном человека
+(conda1): wget -c -q https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/000/001/405/GCA_000001405.29_GRCh38.p14/GCA_000001405.29_GRCh38.p14_genomic.fna.gz    
+# запустить индексацию стандартного генома
+srun -n1 bwa index GRCh38.p14_genomic.fna
+
+#копировать все обрезанные файлы в новую директорию
+cp /home/samorodova/neuro/NP*_trimm.fastq.gz /home/samorodova/neuro/trimm_analis/
+
+# обрезание последовательности
+(conda1): trimmomatic PE -threads 36 NP022308_R1.fastq.gz NP022308_R2.fastq.gz NP022308_R2_trimm.fastq.gz NP022308_R1_unpaired.fastq.gz NP022308_R2_trimm.fastq.gz NP022308_R2_unpaired.fastq.gz LEADING:10 MINLEN:36 SLIDINGWINDOW:4:15
+
+#для всех последовательностей запустить обрезку по скрипту (создать отдельный файл trimm.sh): 
+
+      #!/bin/bash
+
+while IFS= read -r file; do
+  file_fastq_r1="${file}_R1_trimm.fastq.gz"
+  file_fastq_r2="${file}_R2_trimm.fastq.gz"
+
+ trimmomatic PE -threads 256 "${file}_R1.fastq.gz" "${file}_R2.fastq.gz" "${file_fastq_r1}" "${file}_R1_unpaired.fq.gz" "${file_fastq_r2}" "${file}_R2_unpaired.fq.gz" LEADING:10 MINLEN:36 SLIDINGWINDOW:4:15
+  if [ $? -eq 0 ]; then
+    echo "У^пе^но об^або^ан $file"
+  else
+    echo "^озникли п^облем^ ^ $file"
+  fi
+
+done < samples.txt
+
+echo "^б^або^ка ^айлов заве^^ена."
+
+#запуск процесса (по 28 образцам шел больше суток)
+(conda1): cat trimm.sh
